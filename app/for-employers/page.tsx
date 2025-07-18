@@ -245,7 +245,7 @@ export default function ForEmployersPage() {
             The all-in-one platform for healthcare employers: post jobs, verify credentials, and hire with confidence—compliance built in.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/sign-up" className="px-8 py-4 rounded-lg bg-white text-blue-700 font-bold shadow-lg hover:bg-blue-50 transition text-lg flex items-center gap-2">
+            <Link href="/onboarding/company" className="px-8 py-4 rounded-lg bg-white text-blue-700 font-bold shadow-lg hover:bg-blue-50 transition text-lg flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
               Start Free Trial
             </Link>
@@ -517,13 +517,13 @@ export default function ForEmployersPage() {
                 </div>
               </div>
               <div className="text-center">
-                <button
-                  type="submit"
-                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
+                <a
+                  href="/onboarding/company"
+                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
                 >
                   <CheckCircle className="w-5 h-5 inline mr-2" />
                   Start Free Trial
-                </button>
+                </a>
               </div>
               <p className="text-center text-blue-100 text-sm">
                 Free 14-day trial • No credit card required • Cancel anytime
@@ -558,7 +558,7 @@ export default function ForEmployersPage() {
 
       <div className="fixed bottom-6 right-6 z-50">
         <Link 
-          href="/sign-up" 
+          href="/onboarding/company" 
           className="flex items-center gap-3 px-6 py-4 rounded-full shadow-xl text-lg font-bold transition-all duration-300 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 transform hover:scale-105"
         >
           <CheckCircle className="h-5 w-5" />

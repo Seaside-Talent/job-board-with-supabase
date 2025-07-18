@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  Building, 
-  Mail, 
-  User, 
-  FileText, 
-  Brain, 
-  CheckCircle, 
-  ArrowRight, 
+import { useRouter } from "next/navigation";
+import {
+  Building,
+  Mail,
+  User,
+  FileText,
+  Brain,
+  CheckCircle,
+  ArrowRight,
   ArrowLeft,
   CreditCard,
   Sparkles,
@@ -19,8 +20,12 @@ import {
   Zap
 } from "lucide-react";
 import PublicHeader from "@/components/public-header";
+import { createClient } from "@/lib/supabase/client";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 interface CompanyData {
+  name: string;
   companyName: string;
   email: string;
   title: string;
@@ -34,7 +39,6 @@ interface JobData {
   location: string;
   type: string;
   salary: string;
-  requirements: string[];
 }
 
 interface PlanData {
@@ -92,8 +96,11 @@ const industries = ["Hospital", "Nursing Home", "Clinic", "Home Health", "Mental
 const companySizes = ["1-10 employees", "11-50 employees", "51-200 employees", "201-500 employees", "500+ employees"];
 
 export default function CompanyOnboardingPage() {
+  const router = useRouter();
+  const { width, height } = useWindowSize();
   const [currentStep, setCurrentStep] = useState(1);
   const [companyData, setCompanyData] = useState<CompanyData>({
+    name: "",
     companyName: "",
     email: "",
     title: "",
@@ -105,14 +112,42 @@ export default function CompanyOnboardingPage() {
     description: "",
     location: "",
     type: "",
-    salary: "",
-    requirements: []
+    salary: ""
   });
   const [planData, setPlanData] = useState<PlanData>({
     selectedPlan: "free"
   });
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [devModalOpen, setDevModalOpen] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [clientToken, setClientToken] = useState<string | null>(null);
+  const [clientUser, setClientUser] = useState<any>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [jobApiResponse, setJobApiResponse] = useState<any>(null);
+  const [planApiResponse, setPlanApiResponse] = useState<any>(null);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
+  const [showCongrats, setShowCongrats] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setClientToken(data.session?.access_token || null);
+      setClientUser(data.session?.user || null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setClientToken(session?.access_token || null);
+      setClientUser(session?.user || null);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleCompanyDataChange = (field: keyof CompanyData, value: string) => {
     setCompanyData(prev => ({ ...prev, [field]: value }));
@@ -124,9 +159,9 @@ export default function CompanyOnboardingPage() {
 
   const generateJobDescription = async () => {
     if (!jobData.title || !companyData.industry) return;
-    
+
     setIsGeneratingDescription(true);
-    
+
     // Simulate AI generation
     setTimeout(() => {
       const generatedDescription = `We are seeking a dedicated ${jobData.title} to join our ${companyData.industry.toLowerCase()} team. 
@@ -158,23 +193,6 @@ Join our team and make a difference in healthcare!`;
     }, 2000);
   };
 
-  const addRequirement = () => {
-    const newRequirement = prompt("Enter a requirement:");
-    if (newRequirement) {
-      setJobData(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, newRequirement]
-      }));
-    }
-  };
-
-  const removeRequirement = (index: number) => {
-    setJobData(prev => ({
-      ...prev,
-      requirements: prev.requirements.filter((_, i) => i !== index)
-    }));
-  };
-
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
@@ -190,7 +208,7 @@ Join our team and make a difference in healthcare!`;
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return companyData.companyName && companyData.email && companyData.title;
+        return companyData.name && companyData.companyName && companyData.email && companyData.title;
       case 2:
         return jobData.title && jobData.location && jobData.type;
       case 3:
@@ -209,10 +227,184 @@ Join our team and make a difference in healthcare!`;
     window.location.href = "/protected";
   };
 
+  // Step 1: Submit to onboarding API
+  const handleStep1 = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/onboarding/company/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: companyData.name,
+          email: companyData.email,
+          password: Math.random().toString(36).slice(-12) + Date.now(), // random password
+          companyName: companyData.companyName,
+          companyIndustry: companyData.industry,
+          companySize: companyData.companySize,
+          contactTitle: companyData.title,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to create user/company.");
+        setLoading(false);
+        return;
+      }
+      setAuthToken(data.token);
+      setRefreshToken(data.refresh_token);
+      // Set Supabase session manually
+      const supabase = createClient();
+      const { error } = await supabase.auth.setSession({
+        access_token: data.token,
+        refresh_token: data.refresh_token,
+      });
+      if (error) {
+        console.error("Error setting Supabase session:", error.message);
+        setErrorMsg("Failed to authenticate user");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setCurrentStep(currentStep + 1);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  const handleStep2 = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    setJobApiResponse(null);
+    try {
+      // Parse salary range if needed
+      let salaryMin = null, salaryMax = null;
+      if (jobData.salary) {
+        const match = jobData.salary.match(/\$?([\d,]+)\s*-\s*\$?([\d,]+)/);
+        if (match) {
+          salaryMin = parseFloat(match[1].replace(/,/g, ''));
+          salaryMax = parseFloat(match[2].replace(/,/g, ''));
+        }
+      }
+      const res = await fetch("/onboarding/company/job", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(clientToken ? { Authorization: `Bearer ${clientToken}` } : {}),
+        },
+        body: JSON.stringify({
+          title: jobData.title,
+          description: jobData.description,
+          location: jobData.location,
+          job_type: jobData.type,
+          salary_min: salaryMin,
+          salary_max: salaryMax,
+          // requirements, responsibilities, posted_at, expires_at can be added if collected
+        }),
+      });
+      const data = await res.json();
+      setJobApiResponse(data);
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to create job.");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setCurrentStep(currentStep + 1);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  const handleStep3 = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    setPlanApiResponse(null);
+    try {
+      const res = await fetch("/onboarding/company/plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(clientToken ? { Authorization: `Bearer ${clientToken}` } : {}),
+        },
+        body: JSON.stringify({
+          plan_name: planData.selectedPlan,
+        }),
+      });
+      const data = await res.json();
+      setPlanApiResponse(data);
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to select plan.");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setCurrentStep(currentStep + 1);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  const handleSetPassword = async () => {
+    setErrorMsg(null);
+    // Password security checks
+    const minLength = 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    if (password.length < minLength) {
+      setErrorMsg("Password must be at least 8 characters long");
+      return;
+    }
+    if (!hasUpper || !hasLower) {
+      setErrorMsg("Password must include both uppercase and lowercase letters");
+      return;
+    }
+    if (!hasNumber) {
+      setErrorMsg("Password must include at least one number");
+      return;
+    }
+    if (!hasSpecial) {
+      setErrorMsg("Password must include at least one special character");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match");
+      return;
+    }
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password });
+      setLoading(false);
+      if (error) {
+        setErrorMsg(error.message);
+        return;
+      }
+      setShowCongrats(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  // Password requirement checks
+  const minLength = 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const passwordValid = password.length >= minLength && hasUpper && hasLower && hasNumber && hasSpecial;
+  const passwordsMatch = password === confirmPassword && password.length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
       <PublicHeader />
-      
+
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Progress Bar */}
         <div className="mb-8">
@@ -221,7 +413,7 @@ Join our team and make a difference in healthcare!`;
             <div className="text-sm text-gray-600">Step {currentStep} of 4</div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / 4) * 100}%` }}
             ></div>
@@ -236,8 +428,22 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Company Information</h2>
             </div>
             <p className="text-gray-600 mb-8">Tell us about your organization to get started.</p>
-            
+
             <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  value={companyData.name}
+                  onChange={(e) => handleCompanyDataChange("name", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Your full name"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company Name *
@@ -250,7 +456,7 @@ Join our team and make a difference in healthcare!`;
                   placeholder="Enter your company name"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Work Email *
@@ -263,7 +469,7 @@ Join our team and make a difference in healthcare!`;
                   placeholder="your.email@company.com"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Your Title *
@@ -276,7 +482,7 @@ Join our team and make a difference in healthcare!`;
                   placeholder="e.g., HR Director, Hiring Manager"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Industry
@@ -292,7 +498,7 @@ Join our team and make a difference in healthcare!`;
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company Size
@@ -309,6 +515,8 @@ Join our team and make a difference in healthcare!`;
                 </select>
               </div>
             </div>
+          
+            {errorMsg && <div className="mt-4 text-red-600 text-sm font-semibold text-center">{errorMsg}</div>}
           </div>
         )}
 
@@ -320,7 +528,7 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Create Your First Job</h2>
             </div>
             <p className="text-gray-600 mb-8">Let's create your first job posting with AI assistance.</p>
-            
+
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
@@ -335,7 +543,7 @@ Join our team and make a difference in healthcare!`;
                     placeholder="e.g., Registered Nurse, Physical Therapist"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location *
@@ -349,7 +557,7 @@ Join our team and make a difference in healthcare!`;
                   />
                 </div>
               </div>
-              
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -366,7 +574,7 @@ Join our team and make a difference in healthcare!`;
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Salary Range
@@ -380,7 +588,7 @@ Join our team and make a difference in healthcare!`;
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Job Description
@@ -413,33 +621,6 @@ Join our team and make a difference in healthcare!`;
                   </button>
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Requirements
-                </label>
-                <div className="space-y-3">
-                  {jobData.requirements.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="flex-grow">{req}</span>
-                      <button
-                        onClick={() => removeRequirement(index)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addRequirement}
-                    className="text-blue-600 hover:text-blue-700 text-sm"
-                  >
-                    + Add Requirement
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -452,16 +633,15 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Choose Your Plan</h2>
             </div>
             <p className="text-gray-600 mb-8">Select the plan that best fits your hiring needs.</p>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
               {plans.map((plan) => (
                 <div
                   key={plan.id}
-                  className={`relative border-2 rounded-2xl p-6 cursor-pointer transition-all ${
-                    planData.selectedPlan === plan.id
+                  className={`relative border-2 rounded-2xl p-6 cursor-pointer transition-all ${planData.selectedPlan === plan.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                   onClick={() => setPlanData({ selectedPlan: plan.id })}
                 >
                   {plan.popular && (
@@ -471,13 +651,13 @@ Join our team and make a difference in healthcare!`;
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="text-center mb-4">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                     <div className="text-3xl font-bold text-blue-600 mb-1">{plan.price}</div>
                     <p className="text-sm text-gray-600">{plan.description}</p>
                   </div>
-                  
+
                   <ul className="space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
@@ -492,48 +672,79 @@ Join our team and make a difference in healthcare!`;
           </div>
         )}
 
-        {/* Step 4: Email Confirmation */}
+        {/* Step 4: Set Password */}
         {currentStep === 4 && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Mail className="w-8 h-8 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Confirm Your Email</h2>
-            </div>
-            <p className="text-gray-600 mb-8">We've sent a confirmation email to {companyData.email}. Please check your inbox and click the confirmation link.</p>
-            
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-2">Email Sent!</h3>
-                  <p className="text-blue-800 text-sm">
-                    We've sent a confirmation email to <strong>{companyData.email}</strong>. 
-                    Please check your inbox and spam folder.
-                  </p>
-                </div>
+            {showCongrats ? (
+              <div className="flex flex-col items-center justify-center min-h-[300px]">
+                <Confetti width={width} height={height} numberOfPieces={350} recycle={false} />
+                <h2 className="text-3xl font-extrabold text-blue-700 mb-2 text-center">🎉 All Steps Complete!</h2>
+                <p className="text-lg text-gray-700 mb-6 text-center">Congrats! Your company profile is ready.<br />You can now publish your job, invite coworkers, and more from your dashboard.</p>
+                <Link
+                  href="/protected"
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 transition inline-block text-center"
+                >
+                  Go to Dashboard
+                </Link>
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              <button
-                onClick={() => setEmailConfirmed(true)}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                I've Confirmed My Email
-              </button>
-              
-              <div className="text-center">
-                <button className="text-blue-600 hover:text-blue-700 text-sm">
-                  Didn't receive the email? Resend
-                </button>
-              </div>
-            </div>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-blue-800 mb-4">Set Your Password</h2>
+                <p className="text-gray-600 mb-6">
+                  To complete your account, please set a password for future logins.
+                </p>
+                <form className="w-full max-w-md mx-auto" onSubmit={e => { e.preventDefault(); }}>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setPasswordTouched(true); }}
+                    placeholder="New password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2"
+                    required
+                    onBlur={() => setPasswordTouched(true)}
+                  />
+                  {passwordTouched && (
+                    <ul className="mb-2 text-xs text-gray-700 space-y-1">
+                      <li className={password.length >= minLength ? "text-green-600" : "text-gray-500"}>
+                        {password.length >= minLength ? "✓" : "✗"} At least 8 characters
+                      </li>
+                      <li className={hasUpper && hasLower ? "text-green-600" : "text-gray-500"}>
+                        {hasUpper && hasLower ? "✓" : "✗"} Uppercase and lowercase letters
+                      </li>
+                      <li className={hasNumber ? "text-green-600" : "text-gray-500"}>
+                        {hasNumber ? "✓" : "✗"} At least one number
+                      </li>
+                      <li className={hasSpecial ? "text-green-600" : "text-gray-500"}>
+                        {hasSpecial ? "✓" : "✗"} At least one special character
+                      </li>
+                    </ul>
+                  )}
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => { setConfirmPassword(e.target.value); setConfirmTouched(true); }}
+                    placeholder="Confirm password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2"
+                    required
+                    onBlur={() => setConfirmTouched(true)}
+                  />
+                  {confirmTouched && (
+                    <div className={`text-xs font-semibold mb-2 ${passwordsMatch ? "text-green-600" : "text-red-600"}`}>
+                      {passwordsMatch ? "✓ Passwords match" : "✗ Passwords do not match"}
+                    </div>
+                  )}
+                </form>
+                {errorMsg && <div className="mt-4 text-red-600 text-sm font-semibold text-center">{errorMsg}</div>}
+              </>
+            )}
           </div>
         )}
 
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-8">
-          <button
+         {
+          !showCongrats && (
+            <button
             onClick={prevStep}
             disabled={currentStep === 1}
             className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -541,19 +752,21 @@ Join our team and make a difference in healthcare!`;
             <ArrowLeft className="w-4 h-4" />
             Previous
           </button>
-          
-          {currentStep === 4 ? (
+          )
+         }
+
+          {currentStep === 4 ? !showCongrats && (
             <button
-              onClick={handleSubmit}
-              disabled={!canProceed()}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSetPassword}
+              disabled={loading || !passwordValid || !passwordsMatch}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle className="w-4 h-4" />
               Complete Setup
             </button>
           ) : (
             <button
-              onClick={nextStep}
+              onClick={currentStep === 1 ? handleStep1 : currentStep === 2 ? handleStep2 : currentStep === 3 ? handleStep3 : nextStep}
               disabled={!canProceed()}
               className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -563,6 +776,36 @@ Join our team and make a difference in healthcare!`;
           )}
         </div>
       </div>
+
+      {/* Floating Dev Tool Button and Modal */}
+      {devModalOpen && (
+        <div className="fixed bottom-24 right-4 z-50 bg-white border border-blue-500 rounded-lg shadow-lg p-6 max-w-2xl w-[90vw] text-xs text-gray-800">
+          <div className="font-bold mb-2 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 7.5v-2.25A2.25 2.25 0 0014.25 3h-4.5A2.25 2.25 0 007.5 5.25V7.5m9 0h-9m9 0v9.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25V7.5m9 0h-9" /></svg>
+            Dev State
+          </div>
+          <div className="mb-2"><span className="font-semibold">companyData:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(companyData, null, 2)}</pre></div>
+          <div className="mb-2"><span className="font-semibold">jobData:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(jobData, null, 2)}</pre></div>
+          <div className="mb-2"><span className="font-semibold">planData:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(planData, null, 2)}</pre></div>
+          <div className="mb-2"><span className="font-semibold">API access_token:</span> <pre className="break-all whitespace-pre-wrap">{authToken || 'No token yet.'}</pre></div>
+          <div className="mb-2"><span className="font-semibold">API refresh_token:</span> <pre className="break-all whitespace-pre-wrap">{refreshToken || 'No token yet.'}</pre></div>
+          <div className="mb-2"><span className="font-semibold">Client authToken:</span> <pre className="break-all whitespace-pre-wrap">{clientToken || 'No token yet.'}</pre></div>
+          <div className="mb-2"><span className="font-semibold">Client user:</span> <pre className="break-all whitespace-pre-wrap">{clientUser ? JSON.stringify(clientUser, null, 2) : 'No user'}</pre></div>
+          {jobApiResponse && <div className="mb-2"><span className="font-semibold">Job API response:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(jobApiResponse, null, 2)}</pre></div>}
+          {planApiResponse && <div className="mb-2"><span className="font-semibold">Plan API response:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(planApiResponse, null, 2)}</pre></div>}
+          {errorMsg && <div className="mb-2 text-red-600 font-semibold">Error: {errorMsg}</div>}
+          <button className="mt-2 px-3 py-1 bg-blue-600 text-white rounded" onClick={() => setDevModalOpen(false)}>Close</button>
+        </div>
+      )}
+      <button
+        className="fixed bottom-6 right-4 z-50 bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-blue-700"
+        onClick={() => setDevModalOpen(true)}
+        title="Show Dev State"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 7.5v-2.25A2.25 2.25 0 0014.25 3h-4.5A2.25 2.25 0 007.5 5.25V7.5m9 0h-9m9 0v9.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25V7.5m9 0h-9" />
+        </svg>
+      </button>
     </div>
   );
 } 

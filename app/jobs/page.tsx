@@ -495,16 +495,27 @@ export default function JobsPage() {
           <Link href="/contact" className="hover:text-gray-800 transition-colors">Contact</Link>
         </div>
       </footer>
-     {/* Floating Scroll to Top Button */}
-     {showScrollTop && (
-       <button
-         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-         className="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all flex items-center justify-center"
-         aria-label="Scroll to top"
-       >
-         <ChevronUp className="h-6 w-6" />
-       </button>
-     )}
+      {/* Floating Filter Button (Mobile Only) */}
+      {isMobile && !showFilters && (
+        <button
+          onClick={() => setShowFilters(true)}
+          className="fixed z-50 bg-white border-2 border-blue-600 text-blue-600 p-4 rounded-full shadow-md transition-all flex items-center justify-center md:hidden"
+          style={{ right: 24, bottom: 180 }}
+          aria-label="Show Filters"
+        >
+          <Filter className="h-6 w-6" />
+        </button>
+      )}
+      {/* Floating Scroll to Top Button (Desktop Only) */}
+      {!isMobile && showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all flex items-center justify-center"
+          aria-label="Scroll to top"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+      )}
     </div>
   );
 }
