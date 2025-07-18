@@ -59,6 +59,9 @@ export async function updateSession(request: NextRequest) {
     "/audit-ready",
     "/built-for-healthcare",
     "/jobs",
+    "/onboarding",
+    "/onboarding/company",
+    "/onboarding/jobseeker"
   ];
   if (publicRoutes.includes(request.nextUrl.pathname)) {
     return supabaseResponse;

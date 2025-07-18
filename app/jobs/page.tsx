@@ -217,8 +217,8 @@ export default function JobsPage() {
       </section>
 
       {/* Search and Filters */}
-      <section className="bg-white shadow-sm border-b sticky top-16 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="bg-white shadow px-8 py-4">
+        <section className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* AI Search */}
             <div className="flex-1 relative">
@@ -231,24 +231,30 @@ export default function JobsPage() {
                   onChange={(e) => handleSearch(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-blue-600" />
+                  {/* Filters button for mobile */}
+                  <button
+                    className="md:hidden ml-2 p-1 rounded-full bg-gray-100 hover:bg-gray-200"
+                    onClick={() => setShowFilters(true)}
+                    aria-label="Show Filters"
+                  >
+                    <Filter className="h-5 w-5 text-gray-600" />
+                  </button>
                 </div>
               </div>
             </div>
-            
             {/* Filter Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-6 py-4 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
             >
               <Filter className="h-5 w-5" />
-              <span className="hidden sm:inline">Filters</span>
+              <span className="sm:inline">Filters</span>
             </button>
           </div>
-
-          {/* Filters Panel */}
-          {showFilters && (
+          {/* Filters Panel - Desktop */}
+          {!isMobile && showFilters && (
             <div className="mt-6 p-6 bg-gray-50 rounded-xl">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(filters).map(([key, options]) => (
@@ -266,8 +272,35 @@ export default function JobsPage() {
               </div>
             </div>
           )}
-        </div>
-      </section>
+          {/* Filters Modal - Mobile */}
+          {isMobile && showFilters && (
+            <div className="fixed inset-0 z-50 flex items-end justify-center">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowFilters(false)}></div>
+              <div className="relative w-full bg-white rounded-t-2xl p-6 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-lg font-bold text-gray-900">Filters</span>
+                  <button onClick={() => setShowFilters(false)} className="text-gray-500 text-2xl leading-none">&times;</button>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  {Object.entries(filters).map(([key, options]) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        {options.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => setShowFilters(false)} className="mt-6 w-full py-3 bg-blue-600 text-white rounded-lg font-bold">Apply Filters</button>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
 
       {/* Jobs Grid */}
       <div className="max-w-7xl mx-auto px-4 py-8 mt-16">
