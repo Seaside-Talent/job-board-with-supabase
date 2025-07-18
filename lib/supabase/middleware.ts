@@ -47,6 +47,23 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
+  // Allow public access to these routes
+  const publicRoutes = [
+    "/privacy",
+    "/terms",
+    "/about",
+    "/contact",
+    "/compliance",
+    "/licenses",
+    "/for-employers",
+    "/audit-ready",
+    "/built-for-healthcare",
+    "/jobs",
+  ];
+  if (publicRoutes.includes(request.nextUrl.pathname)) {
+    return supabaseResponse;
+  }
+
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
