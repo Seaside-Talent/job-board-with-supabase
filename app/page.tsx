@@ -73,7 +73,7 @@ function useTypingPrompt(prompts: string[], typingSpeed = 40, pause = 1200, dots
     if (phase === 'typing') setDisplay("");
   }, [promptIdx, phase]);
 
-  let dotsStr = phase === 'pause' ? '.'.repeat(dots) : '';
+  const dotsStr = phase === 'pause' ? '.'.repeat(dots) : '';
   return [display + dotsStr, prompts[promptIdx]] as const;
 }
 

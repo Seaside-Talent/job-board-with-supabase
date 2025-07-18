@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 const mockCompany = {
   name: "Acme Health",
@@ -32,7 +33,7 @@ export default function CompanySettingsPage() {
             value={company.logo}
             onChange={e => setCompany({ ...company, logo: e.target.value })}
           />
-          <img src={company.logo} alt="logo" className="w-16 h-16 rounded-full border mt-2" />
+          <Image src={company.logo} alt="logo" width={64} height={64} className="w-16 h-16 rounded-full border mt-2" />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Description</label>

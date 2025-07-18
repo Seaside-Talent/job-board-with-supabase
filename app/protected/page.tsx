@@ -49,7 +49,7 @@ export default async function ProtectedPage() {
               </tr>
               <tr>
                 <td className="py-2 pr-4 font-semibold text-gray-700">Auth Method</td>
-                <td className="py-2 text-gray-900">{Array.isArray(data?.claims?.amr) ? data.claims.amr.map((m: any) => m.method).join(", ") : "-"}</td>
+                <td className="py-2 text-gray-900">{Array.isArray(data?.claims?.amr) ? data.claims.amr.map((m: { method: string }) => m.method).join(", ") : "-"}</td>
               </tr>
               <tr>
                 <td className="py-2 pr-4 font-semibold text-gray-700">App Metadata</td>

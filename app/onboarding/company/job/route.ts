@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ job });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Unknown error" }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
   }
 } 

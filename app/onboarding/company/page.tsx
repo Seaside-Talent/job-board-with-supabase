@@ -45,6 +45,22 @@ interface PlanData {
   selectedPlan: string;
 }
 
+interface User {
+  id: string;
+  email?: string;
+  user_metadata?: { name?: string };
+}
+
+interface ApiResponse {
+  token?: string;
+  refresh_token?: string;
+  user?: User;
+  company?: { id: string; name: string; industry?: string; size?: string };
+  job?: { id: string; title: string; location: string; type: string };
+  company_plan?: { id: string; company_id: string; plan_id: string };
+  error?: string;
+}
+
 const plans = [
   {
     id: "free",
@@ -124,10 +140,10 @@ export default function CompanyOnboardingPage() {
   const [devModalOpen, setDevModalOpen] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [clientToken, setClientToken] = useState<string | null>(null);
-  const [clientUser, setClientUser] = useState<any>(null);
+  const [clientUser, setClientUser] = useState<User | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
-  const [jobApiResponse, setJobApiResponse] = useState<any>(null);
-  const [planApiResponse, setPlanApiResponse] = useState<any>(null);
+  const [jobApiResponse, setJobApiResponse] = useState<ApiResponse | null>(null);
+  const [planApiResponse, setPlanApiResponse] = useState<ApiResponse | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordTouched, setPasswordTouched] = useState(false);
@@ -267,8 +283,8 @@ Join our team and make a difference in healthcare!`;
       }
       setLoading(false);
       setCurrentStep(currentStep + 1);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Unknown error");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Unknown error");
       setLoading(false);
     }
   };
@@ -312,8 +328,8 @@ Join our team and make a difference in healthcare!`;
       }
       setLoading(false);
       setCurrentStep(currentStep + 1);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Unknown error");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Unknown error");
       setLoading(false);
     }
   };
@@ -342,8 +358,8 @@ Join our team and make a difference in healthcare!`;
       }
       setLoading(false);
       setCurrentStep(currentStep + 1);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Unknown error");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Unknown error");
       setLoading(false);
     }
   };
@@ -386,8 +402,8 @@ Join our team and make a difference in healthcare!`;
         return;
       }
       setShowCongrats(true);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Unknown error");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Unknown error");
       setLoading(false);
     }
   };
