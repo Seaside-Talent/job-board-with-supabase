@@ -115,6 +115,8 @@ export default function CompanyOnboardingPage() {
   });
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
+  // 1. Add state for the new requirement input
+  const [newRequirement, setNewRequirement] = useState("");
 
   const handleCompanyDataChange = (field: keyof CompanyData, value: string) => {
     setCompanyData(prev => ({ ...prev, [field]: value }));
@@ -160,13 +162,15 @@ Join our team and make a difference in healthcare!`;
     }, 2000);
   };
 
+  // 2. Replace addRequirement with a function that uses the input field
   const addRequirement = () => {
-    const newRequirement = prompt("Enter a requirement:");
-    if (newRequirement) {
+    const trimmed = newRequirement.trim();
+    if (trimmed && !jobData.requirements.includes(trimmed)) {
       setJobData(prev => ({
         ...prev,
-        requirements: [...prev.requirements, newRequirement]
+        requirements: [...prev.requirements, trimmed]
       }));
+      setNewRequirement("");
     }
   };
 
@@ -435,25 +439,42 @@ Join our team and make a difference in healthcare!`;
                   Requirements
                 </label>
                 <div className="space-y-3">
-                  {jobData.requirements.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="flex-grow">{req}</span>
-                      <button
-                        onClick={() => removeRequirement(index)}
-                        className="text-red-500 hover:text-red-700"
+                  {/* 1. Replace requirements input UI with inline tag input */}
+                  <div className="flex flex-wrap items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500">
+                    {jobData.requirements.map((req, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-medium border border-gray-200"
                       >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addRequirement}
-                    className="text-blue-600 hover:text-blue-700 text-sm"
-                  >
-                    + Add Requirement
-                  </button>
+                        {req}
+                        <button
+                          type="button"
+                          onClick={() => removeRequirement(index)}
+                          className="ml-1 text-gray-400 hover:text-red-500 focus:outline-none"
+                          aria-label={`Remove ${req}`}
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      type="text"
+                      value={newRequirement}
+                      onChange={e => setNewRequirement(e.target.value)}
+                      onKeyDown={e => {
+                        if ((e.key === "Enter" || e.key === ",") && newRequirement.trim()) {
+                          e.preventDefault();
+                          addRequirement();
+                        } else if (e.key === "Backspace" && !newRequirement && jobData.requirements.length > 0) {
+                          // Remove last tag on backspace if input is empty
+                          removeRequirement(jobData.requirements.length - 1);
+                        }
+                      }}
+                      className="flex-grow min-w-[120px] border-none focus:ring-0 text-sm py-1 px-2 bg-transparent outline-none"
+                      placeholder={jobData.requirements.length === 0 ? "Add a requirement and press Enter" : ""}
+                      aria-label="Add requirement"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
