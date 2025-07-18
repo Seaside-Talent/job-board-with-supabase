@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Building,
@@ -19,6 +19,7 @@ import {
   Zap
 } from "lucide-react";
 import PublicHeader from "@/components/public-header";
+import { createClient } from "@/lib/supabase/client";
 
 interface CompanyData {
   name: string;
@@ -113,7 +114,31 @@ export default function CompanyOnboardingPage() {
   });
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [devModalOpen, setDevModalOpen] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [clientToken, setClientToken] = useState<string | null>(null);
+  const [clientUser, setClientUser] = useState<any>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [jobApiResponse, setJobApiResponse] = useState<any>(null);
+  const [planApiResponse, setPlanApiResponse] = useState<any>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setClientToken(data.session?.access_token || null);
+      setClientUser(data.session?.user || null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setClientToken(session?.access_token || null);
+      setClientUser(session?.user || null);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
   const handleCompanyDataChange = (field: keyof CompanyData, value: string) => {
     setCompanyData(prev => ({ ...prev, [field]: value }));
   };
@@ -190,6 +215,127 @@ Join our team and make a difference in healthcare!`;
     console.log("Onboarding completed:", { companyData, jobData, planData });
     // Redirect to dashboard or job posting page
     window.location.href = "/protected";
+  };
+
+  // Step 1: Submit to onboarding API
+  const handleStep1 = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/onboarding/company/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: companyData.name,
+          email: companyData.email,
+          password: Math.random().toString(36).slice(-12) + Date.now(), // random password
+          companyName: companyData.companyName,
+          companyIndustry: companyData.industry,
+          companySize: companyData.companySize,
+          contactTitle: companyData.title,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to create user/company.");
+        setLoading(false);
+        return;
+      }
+      setAuthToken(data.token);
+      setRefreshToken(data.refresh_token);
+      // Set Supabase session manually
+      const supabase = createClient();
+      const { error } = await supabase.auth.setSession({
+        access_token: data.token,
+        refresh_token: data.refresh_token,
+      });
+      if (error) {
+        console.error("Error setting Supabase session:", error.message);
+        setErrorMsg("Failed to authenticate user");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setCurrentStep(currentStep + 1);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  const handleStep2 = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    setJobApiResponse(null);
+    try {
+      // Parse salary range if needed
+      let salaryMin = null, salaryMax = null;
+      if (jobData.salary) {
+        const match = jobData.salary.match(/\$?([\d,]+)\s*-\s*\$?([\d,]+)/);
+        if (match) {
+          salaryMin = parseFloat(match[1].replace(/,/g, ''));
+          salaryMax = parseFloat(match[2].replace(/,/g, ''));
+        }
+      }
+      const res = await fetch("/onboarding/company/job", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(clientToken ? { Authorization: `Bearer ${clientToken}` } : {}),
+        },
+        body: JSON.stringify({
+          title: jobData.title,
+          description: jobData.description,
+          location: jobData.location,
+          job_type: jobData.type,
+          salary_min: salaryMin,
+          salary_max: salaryMax,
+          // requirements, responsibilities, posted_at, expires_at can be added if collected
+        }),
+      });
+      const data = await res.json();
+      setJobApiResponse(data);
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to create job.");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setCurrentStep(currentStep + 1);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  const handleStep3 = async () => {
+    setErrorMsg(null);
+    setLoading(true);
+    setPlanApiResponse(null);
+    try {
+      const res = await fetch("/onboarding/company/plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(clientToken ? { Authorization: `Bearer ${clientToken}` } : {}),
+        },
+        body: JSON.stringify({
+          plan_name: planData.selectedPlan,
+        }),
+      });
+      const data = await res.json();
+      setPlanApiResponse(data);
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to select plan.");
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      setCurrentStep(currentStep + 1);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
   };
 
   return (
@@ -306,6 +452,8 @@ Join our team and make a difference in healthcare!`;
                 </select>
               </div>
             </div>
+          
+            {errorMsg && <div className="mt-4 text-red-600 text-sm font-semibold text-center">{errorMsg}</div>}
           </div>
         )}
 
@@ -522,7 +670,7 @@ Join our team and make a difference in healthcare!`;
             </button>
           ) : (
             <button
-              onClick={nextStep}
+              onClick={currentStep === 1 ? handleStep1 : currentStep === 2 ? handleStep2 : currentStep === 3 ? handleStep3 : nextStep}
               disabled={!canProceed()}
               className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -532,6 +680,36 @@ Join our team and make a difference in healthcare!`;
           )}
         </div>
       </div>
+
+      {/* Floating Dev Tool Button and Modal */}
+      {devModalOpen && (
+        <div className="fixed bottom-24 right-4 z-50 bg-white border border-blue-500 rounded-lg shadow-lg p-6 max-w-2xl w-[90vw] text-xs text-gray-800">
+          <div className="font-bold mb-2 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 7.5v-2.25A2.25 2.25 0 0014.25 3h-4.5A2.25 2.25 0 007.5 5.25V7.5m9 0h-9m9 0v9.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25V7.5m9 0h-9" /></svg>
+            Dev State
+          </div>
+          <div className="mb-2"><span className="font-semibold">companyData:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(companyData, null, 2)}</pre></div>
+          <div className="mb-2"><span className="font-semibold">jobData:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(jobData, null, 2)}</pre></div>
+          <div className="mb-2"><span className="font-semibold">planData:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(planData, null, 2)}</pre></div>
+          <div className="mb-2"><span className="font-semibold">API access_token:</span> <pre className="break-all whitespace-pre-wrap">{authToken || 'No token yet.'}</pre></div>
+          <div className="mb-2"><span className="font-semibold">API refresh_token:</span> <pre className="break-all whitespace-pre-wrap">{refreshToken || 'No token yet.'}</pre></div>
+          <div className="mb-2"><span className="font-semibold">Client authToken:</span> <pre className="break-all whitespace-pre-wrap">{clientToken || 'No token yet.'}</pre></div>
+          <div className="mb-2"><span className="font-semibold">Client user:</span> <pre className="break-all whitespace-pre-wrap">{clientUser ? JSON.stringify(clientUser, null, 2) : 'No user'}</pre></div>
+          {jobApiResponse && <div className="mb-2"><span className="font-semibold">Job API response:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(jobApiResponse, null, 2)}</pre></div>}
+          {planApiResponse && <div className="mb-2"><span className="font-semibold">Plan API response:</span> <pre className="break-all whitespace-pre-wrap">{JSON.stringify(planApiResponse, null, 2)}</pre></div>}
+          {errorMsg && <div className="mb-2 text-red-600 font-semibold">Error: {errorMsg}</div>}
+          <button className="mt-2 px-3 py-1 bg-blue-600 text-white rounded" onClick={() => setDevModalOpen(false)}>Close</button>
+        </div>
+      )}
+      <button
+        className="fixed bottom-6 right-4 z-50 bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-blue-700"
+        onClick={() => setDevModalOpen(true)}
+        title="Show Dev State"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 7.5v-2.25A2.25 2.25 0 0014.25 3h-4.5A2.25 2.25 0 007.5 5.25V7.5m9 0h-9m9 0v9.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25V7.5m9 0h-9" />
+        </svg>
+      </button>
     </div>
   );
 } 

@@ -67,7 +67,12 @@ export async function updateSession(request: NextRequest) {
     "/dashboard/company/admin",
     "/onboarding",
     "/onboarding/company",
-    "/onboarding/professional"
+    "/onboarding/talent",
+    "/onboarding/*",
+    "/onboarding/company/actions",
+    "/onboarding/company/actions/*",
+    "/onboarding/company/job/*",
+    "/onboarding/company/plan/*"
   ];
   if (publicRoutes.includes(request.nextUrl.pathname)) {
     return supabaseResponse;
