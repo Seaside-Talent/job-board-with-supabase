@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building,
   Mail,
@@ -20,6 +21,8 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/public-header";
 import { createClient } from "@/lib/supabase/client";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 
 interface CompanyData {
   name: string;
@@ -93,6 +96,8 @@ const industries = ["Hospital", "Nursing Home", "Clinic", "Home Health", "Mental
 const companySizes = ["1-10 employees", "11-50 employees", "51-200 employees", "201-500 employees", "500+ employees"];
 
 export default function CompanyOnboardingPage() {
+  const router = useRouter();
+  const { width, height } = useWindowSize();
   const [currentStep, setCurrentStep] = useState(1);
   const [companyData, setCompanyData] = useState<CompanyData>({
     name: "",
@@ -123,6 +128,11 @@ export default function CompanyOnboardingPage() {
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [jobApiResponse, setJobApiResponse] = useState<any>(null);
   const [planApiResponse, setPlanApiResponse] = useState<any>(null);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
+  const [showCongrats, setShowCongrats] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -337,6 +347,59 @@ Join our team and make a difference in healthcare!`;
       setLoading(false);
     }
   };
+
+  const handleSetPassword = async () => {
+    setErrorMsg(null);
+    // Password security checks
+    const minLength = 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    if (password.length < minLength) {
+      setErrorMsg("Password must be at least 8 characters long");
+      return;
+    }
+    if (!hasUpper || !hasLower) {
+      setErrorMsg("Password must include both uppercase and lowercase letters");
+      return;
+    }
+    if (!hasNumber) {
+      setErrorMsg("Password must include at least one number");
+      return;
+    }
+    if (!hasSpecial) {
+      setErrorMsg("Password must include at least one special character");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match");
+      return;
+    }
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password });
+      setLoading(false);
+      if (error) {
+        setErrorMsg(error.message);
+        return;
+      }
+      setShowCongrats(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Unknown error");
+      setLoading(false);
+    }
+  };
+
+  // Password requirement checks
+  const minLength = 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const passwordValid = password.length >= minLength && hasUpper && hasLower && hasNumber && hasSpecial;
+  const passwordsMatch = password === confirmPassword && password.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
@@ -609,48 +672,79 @@ Join our team and make a difference in healthcare!`;
           </div>
         )}
 
-        {/* Step 4: Email Confirmation */}
+        {/* Step 4: Set Password */}
         {currentStep === 4 && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Mail className="w-8 h-8 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Confirm Your Email</h2>
-            </div>
-            <p className="text-gray-600 mb-8">We've sent a confirmation email to {companyData.email}. Please check your inbox and click the confirmation link.</p>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-2">Email Sent!</h3>
-                  <p className="text-blue-800 text-sm">
-                    We've sent a confirmation email to <strong>{companyData.email}</strong>.
-                    Please check your inbox and spam folder.
-                  </p>
-                </div>
+            {showCongrats ? (
+              <div className="flex flex-col items-center justify-center min-h-[300px]">
+                <Confetti width={width} height={height} numberOfPieces={350} recycle={false} />
+                <h2 className="text-3xl font-extrabold text-blue-700 mb-2 text-center">🎉 All Steps Complete!</h2>
+                <p className="text-lg text-gray-700 mb-6 text-center">Congrats! Your company profile is ready.<br />You can now publish your job, invite coworkers, and more from your dashboard.</p>
+                <Link
+                  href="/protected"
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 transition inline-block text-center"
+                >
+                  Go to Dashboard
+                </Link>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <button
-                onClick={() => setEmailConfirmed(true)}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                I've Confirmed My Email
-              </button>
-
-              <div className="text-center">
-                <button className="text-blue-600 hover:text-blue-700 text-sm">
-                  Didn't receive the email? Resend
-                </button>
-              </div>
-            </div>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-blue-800 mb-4">Set Your Password</h2>
+                <p className="text-gray-600 mb-6">
+                  To complete your account, please set a password for future logins.
+                </p>
+                <form className="w-full max-w-md mx-auto" onSubmit={e => { e.preventDefault(); }}>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setPasswordTouched(true); }}
+                    placeholder="New password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2"
+                    required
+                    onBlur={() => setPasswordTouched(true)}
+                  />
+                  {passwordTouched && (
+                    <ul className="mb-2 text-xs text-gray-700 space-y-1">
+                      <li className={password.length >= minLength ? "text-green-600" : "text-gray-500"}>
+                        {password.length >= minLength ? "✓" : "✗"} At least 8 characters
+                      </li>
+                      <li className={hasUpper && hasLower ? "text-green-600" : "text-gray-500"}>
+                        {hasUpper && hasLower ? "✓" : "✗"} Uppercase and lowercase letters
+                      </li>
+                      <li className={hasNumber ? "text-green-600" : "text-gray-500"}>
+                        {hasNumber ? "✓" : "✗"} At least one number
+                      </li>
+                      <li className={hasSpecial ? "text-green-600" : "text-gray-500"}>
+                        {hasSpecial ? "✓" : "✗"} At least one special character
+                      </li>
+                    </ul>
+                  )}
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => { setConfirmPassword(e.target.value); setConfirmTouched(true); }}
+                    placeholder="Confirm password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-2"
+                    required
+                    onBlur={() => setConfirmTouched(true)}
+                  />
+                  {confirmTouched && (
+                    <div className={`text-xs font-semibold mb-2 ${passwordsMatch ? "text-green-600" : "text-red-600"}`}>
+                      {passwordsMatch ? "✓ Passwords match" : "✗ Passwords do not match"}
+                    </div>
+                  )}
+                </form>
+                {errorMsg && <div className="mt-4 text-red-600 text-sm font-semibold text-center">{errorMsg}</div>}
+              </>
+            )}
           </div>
         )}
 
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-8">
-          <button
+         {
+          !showCongrats && (
+            <button
             onClick={prevStep}
             disabled={currentStep === 1}
             className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -658,12 +752,14 @@ Join our team and make a difference in healthcare!`;
             <ArrowLeft className="w-4 h-4" />
             Previous
           </button>
+          )
+         }
 
-          {currentStep === 4 ? (
+          {currentStep === 4 ? !showCongrats && (
             <button
-              onClick={handleSubmit}
-              disabled={!canProceed()}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSetPassword}
+              disabled={loading || !passwordValid || !passwordsMatch}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle className="w-4 h-4" />
               Complete Setup

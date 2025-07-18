@@ -13,15 +13,15 @@ export default function ProtectedLayout({
   return (
     <main className="min-h-screen flex flex-col items-center">
       <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16 bg-white/80 shadow-lg sticky top-0 z-40 backdrop-blur-md">
+          <div className="w-full max-w-6xl flex justify-between items-center px-4 md:px-10 py-4">
+            <Link href="/" className="flex flex-col md:flex-row md:items-end gap-1 group cursor-pointer" tabIndex={0} aria-label="Go to homepage">
+              <span className="text-2xl md:text-3xl font-extrabold text-blue-700 tracking-tight leading-tight group-hover:text-blue-900 transition">
+                Seaside Talent
+              </span>
+              <span className="text-sm text-gray-500 md:ml-3 md:mb-1 leading-tight group-hover:text-blue-700 transition">Healthcare Job Board</span>
+            </Link>
+            {<AuthButton />}
           </div>
         </nav>
         <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
