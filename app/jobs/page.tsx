@@ -23,7 +23,8 @@ import {
   X,
   Bookmark,
   Share2,
-  MessageCircle
+  MessageCircle,
+  ChevronUp
 } from 'lucide-react';
 
 // Mock job data
@@ -128,6 +129,7 @@ export default function JobsPage() {
   const [hasMore, setHasMore] = useState(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastJobRef = useRef<HTMLDivElement | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Mobile detection
   useEffect(() => {
@@ -156,14 +158,27 @@ export default function JobsPage() {
     }
   }, [jobs, loading, hasMore]);
 
+  // Show scroll-to-top button after scrolling down
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const loadMoreJobs = () => {
     setLoading(true);
     // Simulate API call
     setTimeout(() => {
       const newJobs = [...mockJobs, ...mockJobs.map(job => ({ ...job, id: job.id + jobs.length }))];
-      setJobs(newJobs);
+      setJobs(prevJobs => {
+        const updatedJobs = [...prevJobs, ...newJobs];
+        // If the selected job is not in the new list, keep it as is
+        return updatedJobs;
+      });
       setLoading(false);
-      if (newJobs.length > 50) setHasMore(false);
+      if (jobs.length + newJobs.length > 50) setHasMore(false);
     }, 1000);
   };
 
@@ -479,8 +494,17 @@ export default function JobsPage() {
           <Link href="/about" className="hover:text-gray-800 transition-colors">About</Link>
           <Link href="/contact" className="hover:text-gray-800 transition-colors">Contact</Link>
         </div>
-        <div className="mt-2">As Featured In: <span className="font-semibold text-gray-700">Healthcare Weekly, MedTech News</span></div>
       </footer>
+     {/* Floating Scroll to Top Button */}
+     {showScrollTop && (
+       <button
+         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+         className="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all flex items-center justify-center"
+         aria-label="Scroll to top"
+       >
+         <ChevronUp className="h-6 w-6" />
+       </button>
+     )}
     </div>
   );
 }

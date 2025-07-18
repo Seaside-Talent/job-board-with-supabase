@@ -141,6 +141,16 @@ export default function CompliancePage() {
         <Link href="/for-employers" className="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold shadow hover:from-blue-700 hover:to-blue-600 transition text-lg">Learn More About Employer Plans</Link>
         <a href="mailto:security@seasidetalent.com" className="px-6 py-3 rounded-lg border-2 border-blue-600 text-blue-700 font-bold bg-white shadow hover:bg-blue-50 transition text-lg">Request Security Documentation</a>
       </div>
+      {/* Footer (copied from landing page) */}
+      <footer className="w-full bg-gradient-to-r from-slate-50 to-gray-50 border-t border-gray-200 py-10 text-center text-xs text-gray-600 mt-auto">
+        <div className="mb-2">© {new Date().getFullYear()} Seaside Talent. All rights reserved.</div>
+        <div className="flex flex-wrap justify-center gap-4 mb-2">
+          <Link href="/privacy" className="hover:text-gray-800 transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-gray-800 transition-colors">Terms</Link>
+          <Link href="/about" className="hover:text-gray-800 transition-colors">About</Link>
+          <Link href="/contact" className="hover:text-gray-800 transition-colors">Contact</Link>
+        </div>
+      </footer>
     </div>
   );
 } 

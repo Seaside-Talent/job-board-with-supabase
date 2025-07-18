@@ -209,7 +209,6 @@ export default function Home() {
           <Link href="/about" className="hover:text-gray-800 transition-colors">About</Link>
           <Link href="/contact" className="hover:text-gray-800 transition-colors">Contact</Link>
         </div>
-        <div className="mt-2">As Featured In: <span className="font-semibold text-gray-700">Healthcare Weekly, MedTech News</span></div>
       </footer>
 
       {/* Floating Action Button: AI-powered search prompt with typing animation */}
