@@ -59,6 +59,9 @@ export async function updateSession(request: NextRequest) {
     "/audit-ready",
     "/built-for-healthcare",
     "/jobs",
+    "/dashboard",
+    "/dashboard/jobseeker",
+    "/dashboard/company",
     "/onboarding",
     "/onboarding/company",
     "/onboarding/jobseeker"
