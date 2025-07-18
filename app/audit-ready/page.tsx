@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { Shield, FileText, Eye, Clock, CheckCircle, Lock, Database, Activity, Users, AlertTriangle } from 'lucide-react'
 import PublicHeader from '@/components/public-header'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Audit Ready - SeaSide Talent',
@@ -30,9 +31,9 @@ export default function AuditReadyPage() {
               Everything in one place for the day of audit.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-semibold px-8 py-3 rounded-lg transition-colors">
+              <Link href="/onboarding/company" className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-semibold px-8 py-3 rounded-lg transition-colors block text-center">
                 Start Free Trial
-              </button>
+              </Link>
               <button className="border-2 border-white/30 hover:border-white/50 text-white font-semibold px-8 py-3 rounded-lg transition-colors">
                 Schedule Demo
               </button>
@@ -319,9 +320,9 @@ export default function AuditReadyPage() {
             Join healthcare organizations that trust us to keep them audit-ready 365 days a year.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-semibold px-8 py-3 rounded-lg transition-colors">
+            <Link href="/onboarding/company" className="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-semibold px-8 py-3 rounded-lg transition-colors block text-center">
               Start Free Trial
-            </button>
+            </Link>
             <button className="border-2 border-white/30 hover:border-white/50 text-white font-semibold px-8 py-3 rounded-lg transition-colors">
               Schedule Demo
             </button>

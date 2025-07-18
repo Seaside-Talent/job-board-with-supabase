@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Briefcase, CheckCircle, FileText, User, Mail, Star, ArrowRight, Edit, Bell } from "lucide-react";
-
+import PublicHeader from "@/components/public-header";
 const recommendedJobs = [
   { id: 1, title: "Registered Nurse - ICU", company: "MGH", location: "Boston, MA" },
   { id: 2, title: "Physical Therapist", company: "BIDMC", location: "Boston, MA" },
@@ -20,6 +20,7 @@ const notifications = [
 export default function JobSeekerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 flex flex-col">
+      <PublicHeader />
       <header className="bg-white shadow p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-green-800 mb-1">Welcome, Jane Doe</h1>

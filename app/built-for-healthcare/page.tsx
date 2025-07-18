@@ -31,9 +31,9 @@ export default function BuiltForHealthcarePage() {
               Built by healthcare professionals, for healthcare professionals.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-yellow-400 hover:bg-yellow-500 text-green-900 font-semibold px-8 py-3 rounded-lg transition-colors">
+              <a href="/onboarding/company" className="bg-yellow-400 hover:bg-yellow-500 text-green-900 font-semibold px-8 py-3 rounded-lg transition-colors block text-center">
                 Start Free Trial
-              </button>
+              </a>
               <button className="border-2 border-white/30 hover:border-white/50 text-white font-semibold px-8 py-3 rounded-lg transition-colors">
                 Schedule Demo
               </button>

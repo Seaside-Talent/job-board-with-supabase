@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { 
-  Building, 
-  Mail, 
-  User, 
-  FileText, 
-  Brain, 
-  CheckCircle, 
-  ArrowRight, 
+import {
+  Building,
+  Mail,
+  User,
+  FileText,
+  Brain,
+  CheckCircle,
+  ArrowRight,
   ArrowLeft,
   CreditCard,
   Sparkles,
@@ -21,6 +21,7 @@ import {
 import PublicHeader from "@/components/public-header";
 
 interface CompanyData {
+  name: string;
   companyName: string;
   email: string;
   title: string;
@@ -94,6 +95,7 @@ const companySizes = ["1-10 employees", "11-50 employees", "51-200 employees", "
 export default function CompanyOnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [companyData, setCompanyData] = useState<CompanyData>({
+    name: "",
     companyName: "",
     email: "",
     title: "",
@@ -124,9 +126,9 @@ export default function CompanyOnboardingPage() {
 
   const generateJobDescription = async () => {
     if (!jobData.title || !companyData.industry) return;
-    
+
     setIsGeneratingDescription(true);
-    
+
     // Simulate AI generation
     setTimeout(() => {
       const generatedDescription = `We are seeking a dedicated ${jobData.title} to join our ${companyData.industry.toLowerCase()} team. 
@@ -190,7 +192,7 @@ Join our team and make a difference in healthcare!`;
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return companyData.companyName && companyData.email && companyData.title;
+        return companyData.name && companyData.companyName && companyData.email && companyData.title;
       case 2:
         return jobData.title && jobData.location && jobData.type;
       case 3:
@@ -212,7 +214,7 @@ Join our team and make a difference in healthcare!`;
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
       <PublicHeader />
-      
+
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Progress Bar */}
         <div className="mb-8">
@@ -221,7 +223,7 @@ Join our team and make a difference in healthcare!`;
             <div className="text-sm text-gray-600">Step {currentStep} of 4</div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / 4) * 100}%` }}
             ></div>
@@ -236,8 +238,22 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Company Information</h2>
             </div>
             <p className="text-gray-600 mb-8">Tell us about your organization to get started.</p>
-            
+
             <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  value={companyData.name}
+                  onChange={(e) => handleCompanyDataChange("name", e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Your full name"
+                  required
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company Name *
@@ -250,7 +266,7 @@ Join our team and make a difference in healthcare!`;
                   placeholder="Enter your company name"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Work Email *
@@ -263,7 +279,7 @@ Join our team and make a difference in healthcare!`;
                   placeholder="your.email@company.com"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Your Title *
@@ -276,7 +292,7 @@ Join our team and make a difference in healthcare!`;
                   placeholder="e.g., HR Director, Hiring Manager"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Industry
@@ -292,7 +308,7 @@ Join our team and make a difference in healthcare!`;
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company Size
@@ -320,7 +336,7 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Create Your First Job</h2>
             </div>
             <p className="text-gray-600 mb-8">Let's create your first job posting with AI assistance.</p>
-            
+
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
@@ -335,7 +351,7 @@ Join our team and make a difference in healthcare!`;
                     placeholder="e.g., Registered Nurse, Physical Therapist"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Location *
@@ -349,7 +365,7 @@ Join our team and make a difference in healthcare!`;
                   />
                 </div>
               </div>
-              
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -366,7 +382,7 @@ Join our team and make a difference in healthcare!`;
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Salary Range
@@ -380,7 +396,7 @@ Join our team and make a difference in healthcare!`;
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Job Description
@@ -413,7 +429,7 @@ Join our team and make a difference in healthcare!`;
                   </button>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Requirements
@@ -452,16 +468,15 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Choose Your Plan</h2>
             </div>
             <p className="text-gray-600 mb-8">Select the plan that best fits your hiring needs.</p>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
               {plans.map((plan) => (
                 <div
                   key={plan.id}
-                  className={`relative border-2 rounded-2xl p-6 cursor-pointer transition-all ${
-                    planData.selectedPlan === plan.id
+                  className={`relative border-2 rounded-2xl p-6 cursor-pointer transition-all ${planData.selectedPlan === plan.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                   onClick={() => setPlanData({ selectedPlan: plan.id })}
                 >
                   {plan.popular && (
@@ -471,13 +486,13 @@ Join our team and make a difference in healthcare!`;
                       </span>
                     </div>
                   )}
-                  
+
                   <div className="text-center mb-4">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
                     <div className="text-3xl font-bold text-blue-600 mb-1">{plan.price}</div>
                     <p className="text-sm text-gray-600">{plan.description}</p>
                   </div>
-                  
+
                   <ul className="space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
@@ -500,20 +515,20 @@ Join our team and make a difference in healthcare!`;
               <h2 className="text-2xl font-bold text-gray-900">Confirm Your Email</h2>
             </div>
             <p className="text-gray-600 mb-8">We've sent a confirmation email to {companyData.email}. Please check your inbox and click the confirmation link.</p>
-            
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-blue-900 mb-2">Email Sent!</h3>
                   <p className="text-blue-800 text-sm">
-                    We've sent a confirmation email to <strong>{companyData.email}</strong>. 
+                    We've sent a confirmation email to <strong>{companyData.email}</strong>.
                     Please check your inbox and spam folder.
                   </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <button
                 onClick={() => setEmailConfirmed(true)}
@@ -521,7 +536,7 @@ Join our team and make a difference in healthcare!`;
               >
                 I've Confirmed My Email
               </button>
-              
+
               <div className="text-center">
                 <button className="text-blue-600 hover:text-blue-700 text-sm">
                   Didn't receive the email? Resend
@@ -541,7 +556,7 @@ Join our team and make a difference in healthcare!`;
             <ArrowLeft className="w-4 h-4" />
             Previous
           </button>
-          
+
           {currentStep === 4 ? (
             <button
               onClick={handleSubmit}

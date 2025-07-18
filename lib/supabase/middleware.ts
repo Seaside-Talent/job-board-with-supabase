@@ -60,11 +60,14 @@ export async function updateSession(request: NextRequest) {
     "/built-for-healthcare",
     "/jobs",
     "/dashboard",
-    "/dashboard/jobseeker",
     "/dashboard/company",
+    "/dashboard/professional",
+    '/dashboard/company/roles',
+    "/dashboard/company/job-postings",
+    "/dashboard/company/admin",
     "/onboarding",
     "/onboarding/company",
-    "/onboarding/jobseeker"
+    "/onboarding/professional"
   ];
   if (publicRoutes.includes(request.nextUrl.pathname)) {
     return supabaseResponse;
