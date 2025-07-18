@@ -3,6 +3,7 @@
 import Link from "next/link";
 import PublicHeader from "@/components/public-header";
 import { useState, useEffect, useRef } from "react";
+import { Sparkles } from "lucide-react";
 
 const aiPrompts = [
   "Find RNs available in Greater Boston",
@@ -211,38 +212,35 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Floating Action Button: AI-powered search prompt with typing animation */}
-      <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-50 flex flex-col items-center sm:items-end">
-        <Link
-          href={{ pathname: "/jobs", query: { q: currentPrompt } }}
-          className="flex items-center gap-3 px-6 py-4 rounded-full sm:rounded-full rounded-2xl shadow-xl text-lg font-bold transition-all duration-300 focus:outline-none bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 animate-fade-in-down font-mono w-full sm:w-auto"
-          aria-label={currentPrompt}
+      {/* Floating Action Button: Chat-style launcher with Sparkles icon only */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <button
+          className="flex items-center justify-center w-16 h-16 rounded-full shadow-xl bg-blue-600 hover:bg-blue-700 transition-all duration-300 focus:outline-none border-4 border-white animate-fade-in-down"
+          aria-label="Open AI Chat"
         >
-          <span className="transition-all duration-300 whitespace-normal sm:whitespace-nowrap text-center sm:text-left">
-            {typedPrompt}
-          </span>
-        </Link>
+          <Sparkles className="h-8 w-8 text-white" />
+        </button>
         <div className="mt-2 text-xs text-gray-700 font-medium pr-2 sm:pr-2 opacity-80 select-none text-center sm:text-right max-w-full sm:max-w-xs">
           Try our AI-powered search prompts!
         </div>
-        {/* Animation keyframes */}
-        <style jsx>{`
-          @keyframes fab-city-up {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-32px); }
-          }
-          @keyframes fab-city-down {
-            0% { opacity: 0; transform: translateY(32px); }
-            100% { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fab-city-up {
-            animation: fab-city-up 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
-          }
-          .animate-fab-city-down {
-            animation: fab-city-down 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
-          }
-        `}</style>
       </div>
+      {/* Animation keyframes */}
+      <style jsx>{`
+        @keyframes fab-city-up {
+          0% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-32px); }
+        }
+        @keyframes fab-city-down {
+          0% { opacity: 0; transform: translateY(32px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fab-city-up {
+          animation: fab-city-up 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        .animate-fab-city-down {
+          animation: fab-city-down 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+      `}</style>
     </div>
   );
 }
