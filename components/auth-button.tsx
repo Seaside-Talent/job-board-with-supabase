@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { LogoutButton } from "./logout-button";
 
 export function AuthButton() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ email?: string; user_metadata?: { name?: string } } | null>(null);
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {

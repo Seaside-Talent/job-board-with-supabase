@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import PublicHeader from '@/components/public-header';
 import { 
@@ -118,9 +118,26 @@ const filters = {
   location: ["All", "Boston", "Cambridge", "Worcester", "Springfield", "Remote"]
 };
 
+interface Job {
+  id: number;
+  title: string;
+  company: string;
+  location: string;
+  type: string;
+  salary: string;
+  posted: string;
+  description: string;
+  requirements: string[];
+  benefits: string[];
+  urgent?: boolean;
+  applicants?: number;
+  rating?: number;
+  aiMatch?: number;
+}
+
 export default function JobsPage() {
   const [jobs, setJobs] = useState(mockJobs);
-  const [selectedJob, setSelectedJob] = useState<any>(mockJobs[0]);
+  const [selectedJob, setSelectedJob] = useState<Job>(mockJobs[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -130,6 +147,21 @@ export default function JobsPage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastJobRef = useRef<HTMLDivElement | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const loadMoreJobs = useCallback(() => {
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      const newJobs = [...mockJobs, ...mockJobs.map(job => ({ ...job, id: job.id + jobs.length }))];
+      setJobs(prevJobs => {
+        const updatedJobs = [...prevJobs, ...newJobs];
+        // If the selected job is not in the new list, keep it as is
+        return updatedJobs;
+      });
+      setLoading(false);
+      if (jobs.length + newJobs.length > 50) setHasMore(false);
+    }, 1000);
+  }, [jobs.length]);
 
   // Mobile detection
   useEffect(() => {
@@ -156,7 +188,7 @@ export default function JobsPage() {
     if (lastJobRef.current) {
       observerRef.current.observe(lastJobRef.current);
     }
-  }, [jobs, loading, hasMore]);
+  }, [jobs, loading, hasMore, loadMoreJobs]);
 
   // Show scroll-to-top button after scrolling down
   useEffect(() => {
@@ -166,21 +198,6 @@ export default function JobsPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const loadMoreJobs = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newJobs = [...mockJobs, ...mockJobs.map(job => ({ ...job, id: job.id + jobs.length }))];
-      setJobs(prevJobs => {
-        const updatedJobs = [...prevJobs, ...newJobs];
-        // If the selected job is not in the new list, keep it as is
-        return updatedJobs;
-      });
-      setLoading(false);
-      if (jobs.length + newJobs.length > 50) setHasMore(false);
-    }, 1000);
-  };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -521,7 +538,7 @@ export default function JobsPage() {
 }
 
 // Job Card Component
-function JobCard({ job, showApplyButton = true, isMobile = false }: { job: any; showApplyButton?: boolean; isMobile?: boolean }) {
+function JobCard({ job, showApplyButton = true, isMobile = false }: { job: Job; showApplyButton?: boolean; isMobile?: boolean }) {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
