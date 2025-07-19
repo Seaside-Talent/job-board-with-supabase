@@ -166,7 +166,23 @@ export default function CompanyOnboardingPage() {
   }, []);
 
   const handleCompanyDataChange = (field: keyof CompanyData, value: string) => {
-    setCompanyData(prev => ({ ...prev, [field]: value }));
+    switch (field) {
+      case "email":
+        // list of non-work email services
+        const nonWorkEmailList = ["gmail",   "yahoo", "hotmail", "outlook"];
+        // check if the email has a match in string list
+        const emailDomain = value.split("@")[1];
+        
+        if (emailDomain && nonWorkEmailList.some(email => emailDomain.includes(email))) {
+          setErrorMsg("Please use a work email address.");
+        } else {
+          setErrorMsg(null);
+        }
+        setCompanyData(prev => ({ ...prev, email: value }));
+        break;
+      default:
+        setCompanyData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleJobDataChange = (field: keyof JobData, value: string | string[]) => {
@@ -481,9 +497,14 @@ Join our team and make a difference in healthcare!`;
                   type="email"
                   value={companyData.email}
                   onChange={(e) => handleCompanyDataChange("email", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errorMsg && errorMsg.includes("work email") ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="your.email@company.com"
                 />
+                {errorMsg && errorMsg.includes("work email") && (
+                  <p className="mt-1 text-sm text-red-600">{errorMsg}</p>
+                )}
               </div>
 
               <div>
